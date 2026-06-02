@@ -46,8 +46,8 @@ jobs:
       issues: write
       packages: write
     outputs:
-      version: ${{ steps.semantic.outputs.version }}
-      released: ${{ steps.semantic.outputs.released }}
+      version: ${{ steps.release-check.outputs.version }}
+      released: ${{ steps.release-check.outputs.released }}
 
     steps:
       - name: Checkout
@@ -70,15 +70,32 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Capture pre-release version
+        run: |
+          PRE_VERSION=$(node -p "require('./package.json').version")
+          echo "PRE_VERSION=$PRE_VERSION" >> "$GITHUB_ENV"
+
       - name: Release
         id: semantic
+        # @semantic-release/npm publishes to GitHub Packages, which has no
+        # anonymous write. The committed .npmrc reads the token from
+        # NODE_AUTH_TOKEN, and @semantic-release/npm also honours NPM_TOKEN, so
+        # both are set here to the workflow GITHUB_TOKEN (packages: write above).
+        # Without these the publish PUT 401s. Run semantic-release directly (no
+        # pipe) so a failed publish fails the job instead of being swallowed by
+        # tee's exit code.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
+      - name: Detect released version
+        id: release-check
         run: |
-          npx semantic-release | tee semantic-release.log
-          if grep -q "Published release" semantic-release.log; then
-            VERSION=$(grep -oE "Published release [0-9]+\.[0-9]+\.[0-9]+" semantic-release.log | head -1 | awk '{print $3}')
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$VERSION" != "$PRE_VERSION" ]; then
             echo "released=true" >> "$GITHUB_OUTPUT"
           else
             echo "released=false" >> "$GITHUB_OUTPUT"
