@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Changed
+
+- **npm package:** the package is now scoped to `@wyre-technology/hudu-mcp` and is
+  published to the **GitHub Packages** npm registry (`https://npm.pkg.github.com`)
+  on each release. The previous unscoped name (`hudu-mcp`) was never published. The
+  `hudu-mcp` CLI/bin command name is unchanged.
+
 ### Fixed
 
 - **Deploy buttons:** one-click "Deploy to Cloudflare Workers" and "Deploy to
