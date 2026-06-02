@@ -1,3 +1,13 @@
+## [Unreleased]
+
+### Fixed
+
+- **Deploy buttons:** one-click "Deploy to Cloudflare Workers" and "Deploy to
+  DigitalOcean" builds no longer fail with `npm error 401 Unauthorized` from
+  `npm.pkg.github.com`. The `.npmrc` now reads a `read:packages` token from
+  `NODE_AUTH_TOKEN`, and the README documents how operators supply their own
+  GitHub PAT as a build-time variable for each target.
+
 ## [1.1.8](https://github.com/wyre-technology/hudu-mcp/compare/v1.1.7...v1.1.8) (2026-02-26)
 
 
