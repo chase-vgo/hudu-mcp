@@ -1,10 +1,13 @@
 {
-  "name": "hudu-mcp",
+  "name": "@wyre-technology/hudu-mcp",
   "version": "1.1.8",
   "description": "MCP (Model Context Protocol) server for Hudu IT documentation platform",
   "main": "dist/entry.js",
   "bin": {
     "hudu-mcp": "./dist/entry.js"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "tsc",
@@ -12,7 +15,9 @@
     "start": "node dist/entry.js",
     "clean": "rm -rf dist",
     "prepare": "npm run build",
-    "prebuild": "npm run clean"
+    "prebuild": "npm run clean",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "mcp",
@@ -37,7 +42,8 @@
     "@types/node": "^20.10.0",
     "semantic-release": "^22.0.12",
     "tsx": "^4.6.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.1"
   },
   "engines": {
     "node": ">=18.0.0"
