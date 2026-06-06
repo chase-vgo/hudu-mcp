@@ -194,9 +194,23 @@ export class HuduToolHandler {
     } catch (error) {
       this.logger.error(`Tool execution failed for ${name}:`, error);
       return {
-        content: [{ type: 'text', text: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', tool: name }) }],
+        content: [{ type: 'text', text: JSON.stringify({ error: describeError(error), tool: name }) }],
         isError: true
       };
     }
   }
+}
+
+/**
+ * Build a detailed error string. Low-level fetch errors (undici) carry the real
+ * reason on `error.cause` (e.g. ECONNRESET, ETIMEDOUT, ENOTFOUND) while
+ * `error.message` is just "fetch failed" — surface both so failures are diagnosable.
+ */
+function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return 'Unknown error';
+  const cause = (error as any).cause;
+  if (!cause) return error.message;
+  const causeMsg = cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
+  const code = (cause as any)?.code;
+  return code ? `${error.message} (${causeMsg}; code=${code})` : `${error.message} (${causeMsg})`;
 }

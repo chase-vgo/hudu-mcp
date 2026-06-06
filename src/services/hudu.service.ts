@@ -4,10 +4,16 @@ import { Logger } from '../utils/logger.js';
 
 export class HuduService {
   private client: HuduClient | null = null;
+  private retryingClient: HuduClient | null = null;
   private logger: Logger;
   private config: McpServerConfig;
   private initializationPromise: Promise<void> | null = null;
   private disallowedCompanyIds: Set<number>;
+
+  // Pre-connection failures: the request was never sent to Hudu, so retrying is
+  // safe even for non-idempotent writes (create/delete/archive). EAI_AGAIN is the
+  // transient DNS hiccup seen inside containers; the others are flaky-resolver/host kin.
+  private static readonly RETRYABLE_CODES = new Set(['EAI_AGAIN', 'ENOTFOUND', 'ECONNREFUSED']);
 
   constructor(config: McpServerConfig, logger: Logger) {
     this.config = config;
@@ -38,7 +44,57 @@ export class HuduService {
     if (!this.client) {
       await this.ensureInitialized();
     }
-    return this.client!;
+    return this.retryingClient ?? this.client!;
+  }
+
+  /** Is this a transient, pre-connection error worth retrying? (DNS / connection-refused.) */
+  private isRetryable(error: unknown): boolean {
+    const cause: any = (error as any)?.cause ?? error;
+    if (typeof cause?.code === 'string' && HuduService.RETRYABLE_CODES.has(cause.code)) return true;
+    // Fall back to message matching in case the code isn't propagated.
+    return /\b(EAI_AGAIN|ENOTFOUND|ECONNREFUSED)\b/.test(String(cause?.message ?? ''));
+  }
+
+  /** Run an API call, retrying transient pre-connection failures with short backoff. */
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (attempt === attempts || !this.isRetryable(error)) throw error;
+        const delayMs = 250 * attempt;
+        this.logger.warn(`Transient network error from Hudu API (attempt ${attempt}/${attempts}); retrying in ${delayMs}ms`, error);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    throw lastError;
+  }
+
+  /**
+   * Wrap the SDK client so every resource method (client.companies.list, etc.)
+   * is run through withRetry — one place, no per-method changes. Non-function
+   * properties pass through untouched.
+   */
+  private createRetryingProxy(client: HuduClient): HuduClient {
+    const runWithRetry = (fn: (...a: any[]) => any, ctx: any) =>
+      (...args: any[]) => this.withRetry(() => fn.apply(ctx, args));
+
+    const wrapResource = <T extends object>(resource: T): T => new Proxy(resource, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === 'function' ? runWithRetry(value, target) : value;
+      },
+    });
+
+    return new Proxy(client, {
+      get: (target, prop, receiver) => {
+        const value = Reflect.get(target, prop, receiver);
+        if (value && typeof value === 'object') return wrapResource(value);
+        return typeof value === 'function' ? runWithRetry(value, target) : value;
+      },
+    });
   }
 
   private async ensureInitialized(): Promise<void> {
@@ -60,6 +116,7 @@ export class HuduService {
 
     this.logger.info('Initializing Hudu client...');
     this.client = new HuduClient({ baseUrl, apiKey });
+    this.retryingClient = this.createRetryingProxy(this.client);
     this.logger.info('Hudu client initialized successfully');
   }
 
@@ -302,6 +359,7 @@ export class HuduService {
    */
   updateCredentials(baseUrl: string, apiKey: string): void {
     this.client = new HuduClient({ baseUrl, apiKey });
+    this.retryingClient = this.createRetryingProxy(this.client);
     this.initializationPromise = null;
     this.logger.debug('Hudu client reinitialized with new credentials');
   }
