@@ -10,7 +10,7 @@ services:
     image: hudu-mcp:local
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "3100:3100"
     environment:
       # --- Hudu credentials (runtime) ---
       HUDU_BASE_URL: ${HUDU_BASE_URL:?set HUDU_BASE_URL}
@@ -20,14 +20,14 @@ services:
       HUDU_DISALLOWED_COMPANY_IDS: ${HUDU_DISALLOWED_COMPANY_IDS:-}
       # --- Transport: run as a long-lived HTTP service ---
       MCP_TRANSPORT: http
-      MCP_HTTP_PORT: "8080"
+      MCP_HTTP_PORT: "3100"
       MCP_HTTP_HOST: 0.0.0.0
       # --- Optional ---
       LOG_LEVEL: ${LOG_LEVEL:-info}
       LOG_FORMAT: ${LOG_FORMAT:-json}
       AUTH_MODE: ${AUTH_MODE:-env}
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/health"]
       interval: 30s
       timeout: 10s
       retries: 3
