@@ -83,14 +83,14 @@ export class HuduService {
 
     const wrapResource = <T extends object>(resource: T): T => new Proxy(resource, {
       get: (target, prop, receiver) => {
-        const value = Reflect.get(target, prop, receiver);
+        const value: any = Reflect.get(target, prop, receiver);
         return typeof value === 'function' ? runWithRetry(value, target) : value;
       },
     });
 
     return new Proxy(client, {
       get: (target, prop, receiver) => {
-        const value = Reflect.get(target, prop, receiver);
+        const value: any = Reflect.get(target, prop, receiver);
         if (value && typeof value === 'object') return wrapResource(value);
         return typeof value === 'function' ? runWithRetry(value, target) : value;
       },
