@@ -19,6 +19,7 @@ export interface EnvironmentConfig {
   hudu: {
     baseUrl?: string;
     apiKey?: string;
+    disallowedCompanyIds: number[];
   };
   server: {
     name: string;
@@ -64,7 +65,16 @@ export function loadEnvironmentConfig(): EnvironmentConfig {
 
   const authMode = (process.env.AUTH_MODE as AuthMode) || 'env';
 
-  const huduConfig: { baseUrl?: string; apiKey?: string } = {};
+  // Comma-separated list of company IDs to hide from all tools/resources.
+  // Parsed regardless of auth mode so the filter applies in both env and gateway modes.
+  const disallowedCompanyIds = (process.env.HUDU_DISALLOWED_COMPANY_IDS || '')
+    .split(',')
+    .map(s => Number(s.trim()))
+    .filter(n => Number.isInteger(n) && n > 0);
+
+  const huduConfig: { baseUrl?: string; apiKey?: string; disallowedCompanyIds: number[] } = {
+    disallowedCompanyIds
+  };
 
   if (authMode === 'gateway') {
     // In gateway mode, credentials arrive per-request via HTTP headers.
@@ -102,6 +112,7 @@ export function mergeWithMcpConfig(envConfig: EnvironmentConfig): McpServerConfi
     hudu: {
       baseUrl: envConfig.hudu.baseUrl,
       apiKey: envConfig.hudu.apiKey,
+      disallowedCompanyIds: envConfig.hudu.disallowedCompanyIds,
     }
   };
 }

@@ -71,6 +71,7 @@ reads the token from `NODE_AUTH_TOKEN`, so no further config is needed.
 |---|---|---|---|
 | `HUDU_BASE_URL` | Yes | - | Your Hudu instance URL (e.g., `https://docs.example.com`) |
 | `HUDU_API_KEY` | Yes | - | Your Hudu API key |
+| `HUDU_DISALLOWED_COMPANY_IDS` | No | - | Comma-separated company IDs to hide from all tools and resources (companies + their assets, articles, websites, passwords). See [Restricting companies](#restricting-companies). |
 | `MCP_TRANSPORT` | No | `stdio` | Transport type: `stdio` or `http` |
 | `MCP_HTTP_PORT` | No | `8080` | HTTP server port (when using `http` transport) |
 | `MCP_HTTP_HOST` | No | `0.0.0.0` | HTTP server host |
@@ -78,6 +79,46 @@ reads the token from `NODE_AUTH_TOKEN`, so no further config is needed.
 | `MCP_SERVER_VERSION` | No | `1.0.0` | Server version reported to MCP clients |
 | `LOG_LEVEL` | No | `info` | Log level: `error`, `warn`, `info`, `debug` |
 | `LOG_FORMAT` | No | `simple` | Log format: `json` or `simple` |
+
+### Restricting companies
+
+Set `HUDU_DISALLOWED_COMPANY_IDS` to a comma-separated list of company IDs to make the
+server behave as if those companies — and everything filed under them — do not exist:
+
+```bash
+HUDU_DISALLOWED_COMPANY_IDS=123,456
+```
+
+The filter is enforced for both tools and resources:
+
+- `hudu_list_companies` (and the `hudu://companies` resource) omit the listed IDs.
+- `hudu_get_company` / mutating company tools reject a disallowed ID with an error.
+- List endpoints for assets, articles, websites, passwords, folders, procedures,
+  activity logs, relations, and Magic Dash drop rows whose `company_id` is disallowed.
+- Reading or mutating a child record (by ID) that belongs to a disallowed company is
+  rejected. Records with no company (global articles, asset layouts) are unaffected.
+
+## Run with Docker Compose
+
+The repo ships a `docker-compose.yml` that builds the image and runs the server as an
+HTTP service on port 8080 — no local Node/npm required, Docker runs the install during
+the build.
+
+Because `@wyre-technology/node-hudu` lives on GitHub Packages, the **build** needs a
+GitHub Personal Access Token with the `read:packages` scope, passed as `NODE_AUTH_TOKEN`.
+The compose file wires it through to the `Dockerfile`'s `ARG NODE_AUTH_TOKEN`.
+
+```bash
+cp .env.example .env        # then edit: NODE_AUTH_TOKEN, HUDU_BASE_URL, HUDU_API_KEY, ...
+
+docker compose build        # fails if NODE_AUTH_TOKEN is unset
+docker compose up -d
+
+curl http://localhost:8080/health   # verify it's running
+```
+
+Docker Compose auto-loads `.env` for variable substitution, so the same file supplies
+both the build-time token and the runtime Hudu configuration.
 
 ## Usage
 

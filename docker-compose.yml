@@ -1,0 +1,39 @@
+services:
+  hudu-mcp:
+    build:
+      context: .
+      args:
+        # GitHub PAT with `read:packages` — needed at BUILD time only to pull
+        # @wyre-technology/node-hudu from GitHub Packages. Set it in your shell
+        # or in a .env file next to this compose file.
+        NODE_AUTH_TOKEN: ${NODE_AUTH_TOKEN:?Need a GitHub PAT with read:packages to build}
+    image: hudu-mcp:local
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # --- Hudu credentials (runtime) ---
+      HUDU_BASE_URL: ${HUDU_BASE_URL:?set HUDU_BASE_URL}
+      HUDU_API_KEY: ${HUDU_API_KEY:?set HUDU_API_KEY}
+      # Comma-separated company IDs to hide from all tools/resources
+      # (companies + their assets, articles, websites, passwords). Optional.
+      HUDU_DISALLOWED_COMPANY_IDS: ${HUDU_DISALLOWED_COMPANY_IDS:-}
+      # --- Transport: run as a long-lived HTTP service ---
+      MCP_TRANSPORT: http
+      MCP_HTTP_PORT: "8080"
+      MCP_HTTP_HOST: 0.0.0.0
+      # --- Optional ---
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      AUTH_MODE: ${AUTH_MODE:-env}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    volumes:
+      - hudu-logs:/app/logs
+
+volumes:
+  hudu-logs:

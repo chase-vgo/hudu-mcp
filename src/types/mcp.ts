@@ -4,6 +4,7 @@ export interface McpServerConfig {
   hudu: {
     baseUrl?: string;
     apiKey?: string;
+    disallowedCompanyIds?: number[];
   };
 }
 
