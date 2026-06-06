@@ -7,6 +7,7 @@ import {
   CallToolRequestSchema,
   ErrorCode,
   ListResourcesRequestSchema,
+  ListResourceTemplatesRequestSchema,
   ListToolsRequestSchema,
   McpError,
   ReadResourceRequestSchema,
@@ -112,6 +113,16 @@ export class HuduMcpServer {
       } catch (error) {
         this.logger.error('Failed to list resources:', error);
         throw new McpError(ErrorCode.InternalError, `Failed to list resources: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    });
+
+    server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+      try {
+        const resourceTemplates = await resourceHandler.listResourceTemplates();
+        return { resourceTemplates };
+      } catch (error) {
+        this.logger.error('Failed to list resource templates:', error);
+        throw new McpError(ErrorCode.InternalError, `Failed to list resource templates: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     });
 

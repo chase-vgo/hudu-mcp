@@ -8,6 +8,13 @@ export interface McpResource {
   mimeType?: string;
 }
 
+export interface McpResourceTemplate {
+  uriTemplate: string;
+  name: string;
+  description?: string;
+  mimeType?: string;
+}
+
 export interface McpResourceContent {
   uri: string;
   mimeType: string;
@@ -26,11 +33,16 @@ export class HuduResourceHandler {
   async listResources(): Promise<McpResource[]> {
     return [
       { uri: 'hudu://companies', name: 'All Companies', description: 'List of all companies in Hudu', mimeType: 'application/json' },
-      { uri: 'hudu://companies/{id}', name: 'Company by ID', description: 'Get specific company details by ID', mimeType: 'application/json' },
       { uri: 'hudu://assets', name: 'All Assets', description: 'List of all assets in Hudu', mimeType: 'application/json' },
-      { uri: 'hudu://assets/{id}', name: 'Asset by ID', description: 'Get specific asset details by ID', mimeType: 'application/json' },
       { uri: 'hudu://articles', name: 'All Articles', description: 'List of all knowledge base articles in Hudu', mimeType: 'application/json' },
-      { uri: 'hudu://articles/{id}', name: 'Article by ID', description: 'Get specific article details by ID', mimeType: 'application/json' },
+    ];
+  }
+
+  async listResourceTemplates(): Promise<McpResourceTemplate[]> {
+    return [
+      { uriTemplate: 'hudu://companies/{id}', name: 'Company by ID', description: 'Get specific company details by ID', mimeType: 'application/json' },
+      { uriTemplate: 'hudu://assets/{id}', name: 'Asset by ID', description: 'Get specific asset details by ID', mimeType: 'application/json' },
+      { uriTemplate: 'hudu://articles/{id}', name: 'Article by ID', description: 'Get specific article details by ID', mimeType: 'application/json' },
     ];
   }
 
