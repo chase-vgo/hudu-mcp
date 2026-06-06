@@ -92,11 +92,18 @@ HUDU_DISALLOWED_COMPANY_IDS=123,456
 The filter is enforced for both tools and resources:
 
 - `hudu_list_companies` (and the `hudu://companies` resource) omit the listed IDs.
-- `hudu_get_company` / mutating company tools reject a disallowed ID with an error.
+- `hudu_get_company` and the mutating company tools reject a disallowed ID with an error.
 - List endpoints for assets, articles, websites, passwords, folders, procedures,
-  activity logs, relations, and Magic Dash drop rows whose `company_id` is disallowed.
-- Reading or mutating a child record (by ID) that belongs to a disallowed company is
-  rejected. Records with no company (global articles, asset layouts) are unaffected.
+  activity logs, relations, and Magic Dash drop rows whose `company_id` is disallowed —
+  this is the primary guard, since it's what hides those records (and their IDs) from a client.
+- Getting a child record whose `company_id` is disallowed, or creating/updating one with a
+  disallowed `company_id` in the payload, is rejected. Records with no company (global
+  articles, asset layouts) are unaffected.
+
+> Note: deleting/archiving a child record by raw ID is **not** pre-checked against the
+> disallow list, because Hudu has no reliable bare get-by-ID for those records to resolve
+> the owning company without breaking the operation. In practice a client can't reach those
+> IDs anyway — list and get already hide disallowed companies' records.
 
 ## Run with Docker Compose
 

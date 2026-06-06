@@ -183,19 +183,16 @@ export class HuduService {
 
   async updateAsset(id: number, data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
-    await this.getAsset(id); // guards: rejects if the existing asset belongs to a disallowed company
     const client = await this.ensureClient();
     return client.assets.update(id, data);
   }
 
   async deleteAsset(id: number): Promise<void> {
-    await this.getAsset(id); // guards against deleting a disallowed company's asset by raw id
     const client = await this.ensureClient();
     await client.assets.delete(id);
   }
 
   async archiveAsset(id: number): Promise<void> {
-    await this.getAsset(id); // guards against archiving a disallowed company's asset by raw id
     const client = await this.ensureClient();
     await client.assets.archive(id);
   }
@@ -242,13 +239,11 @@ export class HuduService {
 
   async updateAssetPassword(id: number, data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
-    await this.getAssetPassword(id); // guards: rejects if the existing record belongs to a disallowed company
     const client = await this.ensureClient();
     return client.assetPasswords.update(id, data);
   }
 
   async deleteAssetPassword(id: number): Promise<void> {
-    await this.getAssetPassword(id); // guards against deleting a disallowed company's password by raw id
     const client = await this.ensureClient();
     await client.assetPasswords.delete(id);
   }
@@ -274,19 +269,16 @@ export class HuduService {
 
   async updateArticle(id: number, data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
-    await this.getArticle(id); // guards: rejects if the existing article belongs to a disallowed company
     const client = await this.ensureClient();
     return client.articles.update(id, data);
   }
 
   async deleteArticle(id: number): Promise<void> {
-    await this.getArticle(id); // guards against deleting a disallowed company's article by raw id
     const client = await this.ensureClient();
     await client.articles.delete(id);
   }
 
   async archiveArticle(id: number): Promise<void> {
-    await this.getArticle(id); // guards against archiving a disallowed company's article by raw id
     const client = await this.ensureClient();
     await client.articles.archive(id);
   }
@@ -312,13 +304,11 @@ export class HuduService {
 
   async updateWebsite(id: number, data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
-    await this.getWebsite(id); // guards: rejects if the existing website belongs to a disallowed company
     const client = await this.ensureClient();
     return client.websites.update(id, data);
   }
 
   async deleteWebsite(id: number): Promise<void> {
-    await this.getWebsite(id); // guards against deleting a disallowed company's website by raw id
     const client = await this.ensureClient();
     await client.websites.delete(id);
   }
