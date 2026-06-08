@@ -181,22 +181,40 @@ export class HuduService {
     return client.assets.create(data);
   }
 
-  async updateAsset(companyId: number, id: number, data: any): Promise<any> {
-    this.assertCompanyAllowed(companyId);
-    const client = await this.ensureClient();
-    return client.assets.update(companyId, id, data);
+  /**
+   * Hudu addresses single assets under their company. Callers that already know
+   * the company id pass it; otherwise resolve it from the asset itself (the
+   * top-level get works without a company) so the MCP tool only needs an asset id.
+   * Also enforces the disallow list on the resolved company.
+   */
+  private async resolveAssetCompanyId(companyId: number | undefined | null, id: number): Promise<number> {
+    if (companyId != null) {
+      this.assertCompanyAllowed(companyId);
+      return Number(companyId);
+    }
+    const asset = await this.getAsset(id); // works via /api/v1/assets?id=; also runs the disallow check
+    if (asset?.company_id == null) {
+      throw new Error(`Could not resolve company_id for asset ${id}`);
+    }
+    return Number(asset.company_id);
   }
 
-  async deleteAsset(companyId: number, id: number): Promise<void> {
-    this.assertCompanyAllowed(companyId);
+  async updateAsset(companyId: number | undefined, id: number, data: any): Promise<any> {
+    const cid = await this.resolveAssetCompanyId(companyId, id);
     const client = await this.ensureClient();
-    await client.assets.delete(companyId, id);
+    return client.assets.update(cid, id, data);
   }
 
-  async archiveAsset(companyId: number, id: number): Promise<void> {
-    this.assertCompanyAllowed(companyId);
+  async deleteAsset(companyId: number | undefined, id: number): Promise<void> {
+    const cid = await this.resolveAssetCompanyId(companyId, id);
     const client = await this.ensureClient();
-    await client.assets.archive(companyId, id);
+    await client.assets.delete(cid, id);
+  }
+
+  async archiveAsset(companyId: number | undefined, id: number): Promise<void> {
+    const cid = await this.resolveAssetCompanyId(companyId, id);
+    const client = await this.ensureClient();
+    await client.assets.archive(cid, id);
   }
 
   // Asset Layouts
