@@ -104,25 +104,6 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     }
   },
   {
-    name: 'hudu_delete_company',
-    description:
-      '⚠ DESTRUCTIVE — IRREVERSIBLE. Permanently deletes a company and all of its ' +
-      'associated assets, articles, passwords, and other data. This action cannot be undone. ' +
-      'Confirm with the user before invoking.',
-    annotations: {
-      title: 'Delete company (irreversible)',
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: { id: { type: 'number', description: 'Company ID' } },
-      required: ['id']
-    }
-  },
-  {
     name: 'hudu_archive_company',
     description:
       '⚠ HIGH-IMPACT. Archives a company, removing it from active use and hiding ' +
@@ -239,28 +220,6 @@ export const TOOL_DEFINITIONS: McpTool[] = [
             'A single { } object is also accepted and wrapped automatically.',
           items: { type: 'object' }
         }
-      },
-      required: ['id']
-    }
-  },
-  {
-    name: 'hudu_delete_asset',
-    description:
-      '⚠ DESTRUCTIVE — IRREVERSIBLE. Permanently deletes an asset and all of its ' +
-      'associated data, passwords, and configuration information. This action cannot be undone. ' +
-      'Confirm with the user before invoking.',
-    annotations: {
-      title: 'Delete asset (irreversible)',
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'number', description: 'Asset ID' },
-        company_id: { type: 'number', description: 'Owning company ID (optional; auto-resolved from the asset if omitted)' }
       },
       required: ['id']
     }
@@ -418,25 +377,6 @@ export const TOOL_DEFINITIONS: McpTool[] = [
       required: ['id']
     }
   },
-  {
-    name: 'hudu_delete_asset_password',
-    description:
-      '⚠ DESTRUCTIVE — IRREVERSIBLE. Permanently deletes an asset password and all ' +
-      'associated authentication information. This action cannot be undone. ' +
-      'Confirm with the user before invoking.',
-    annotations: {
-      title: 'Delete asset password (irreversible)',
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: { id: { type: 'number', description: 'Asset password ID' } },
-      required: ['id']
-    }
-  },
 
   // Articles
   {
@@ -500,25 +440,6 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     }
   },
   {
-    name: 'hudu_delete_article',
-    description:
-      '⚠ DESTRUCTIVE — IRREVERSIBLE. Permanently deletes a knowledge base article and all ' +
-      'its content, attachments, and version history. This action cannot be undone. ' +
-      'Confirm with the user before invoking.',
-    annotations: {
-      title: 'Delete article (irreversible)',
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: { id: { type: 'number', description: 'Article ID' } },
-      required: ['id']
-    }
-  },
-  {
     name: 'hudu_archive_article',
     description:
       '⚠ HIGH-IMPACT. Archives a knowledge base article, removing it from active use ' +
@@ -534,87 +455,6 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'number', description: 'Article ID' } },
-      required: ['id']
-    }
-  },
-
-  // Websites
-  {
-    name: 'hudu_list_websites',
-    description: 'List monitored websites in Hudu',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: 'Page number' },
-        page_size: { type: 'number', description: 'Results per page' },
-        name: { type: 'string', description: 'Filter by name' },
-        company_id: { type: 'number', description: 'Filter by company ID' }
-      },
-      required: []
-    }
-  },
-  {
-    name: 'hudu_get_website',
-    description: 'Get a website by ID',
-    inputSchema: {
-      type: 'object',
-      properties: { id: { type: 'number', description: 'Website ID' } },
-      required: ['id']
-    }
-  },
-  {
-    name: 'hudu_create_website',
-    description: 'Create a new website in Hudu',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', description: 'Website name (required)' },
-        url: { type: 'string', description: 'Website URL' },
-        notes: { type: 'string', description: 'Notes' },
-        paused: { type: 'boolean', description: 'Paused status' },
-        company_id: { type: 'number', description: 'Company ID' },
-        disable_dns: { type: 'boolean', description: 'Disable DNS monitoring' },
-        disable_ssl: { type: 'boolean', description: 'Disable SSL monitoring' },
-        disable_whois: { type: 'boolean', description: 'Disable WHOIS monitoring' }
-      },
-      required: ['name']
-    }
-  },
-  {
-    name: 'hudu_update_website',
-    description: 'Update an existing website in Hudu',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'number', description: 'Website ID' },
-        name: { type: 'string', description: 'Website name' },
-        url: { type: 'string', description: 'Website URL' },
-        notes: { type: 'string', description: 'Notes' },
-        paused: { type: 'boolean', description: 'Paused status' },
-        company_id: { type: 'number', description: 'Company ID' },
-        disable_dns: { type: 'boolean', description: 'Disable DNS monitoring' },
-        disable_ssl: { type: 'boolean', description: 'Disable SSL monitoring' },
-        disable_whois: { type: 'boolean', description: 'Disable WHOIS monitoring' }
-      },
-      required: ['id']
-    }
-  },
-  {
-    name: 'hudu_delete_website',
-    description:
-      '⚠ DESTRUCTIVE — IRREVERSIBLE. Permanently deletes a website and all ' +
-      'its monitoring history, SSL certificates, and DNS records data. This action cannot be undone. ' +
-      'Confirm with the user before invoking.',
-    annotations: {
-      title: 'Delete website (irreversible)',
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-    inputSchema: {
-      type: 'object',
-      properties: { id: { type: 'number', description: 'Website ID' } },
       required: ['id']
     }
   },
@@ -646,26 +486,6 @@ export const TOOL_DEFINITIONS: McpTool[] = [
         page_size: { type: 'number', description: 'Results per page' },
         company_id: { type: 'number', description: 'Filter by company ID' },
         name: { type: 'string', description: 'Filter by name' }
-      },
-      required: []
-    }
-  },
-
-  // Activity Logs
-  {
-    name: 'hudu_list_activity_logs',
-    description: 'List activity logs in Hudu',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: { type: 'number', description: 'Page number' },
-        page_size: { type: 'number', description: 'Results per page' },
-        user_id: { type: 'number', description: 'Filter by user ID' },
-        user_email: { type: 'string', description: 'Filter by user email' },
-        resource_id: { type: 'number', description: 'Filter by resource ID' },
-        resource_type: { type: 'string', description: 'Filter by resource type' },
-        action_message: { type: 'string', description: 'Filter by action message' },
-        start_date: { type: 'string', description: 'Filter by start date (ISO format)' }
       },
       required: []
     }

@@ -308,19 +308,19 @@ This server provides access to Hudu IT documentation platform through the Model 
 - **hudu://assets**, **hudu://assets/{id}** - Asset data
 - **hudu://articles**, **hudu://articles/{id}** - Knowledge base articles
 
-## Available Tools (39 total):
-- Companies: list, get, create, update, delete, archive, unarchive
-- Assets: list, get, create, update, delete, archive
+## Available Tools:
+- Companies: list, get, create, update, archive, unarchive
+- Assets: list/search, get, create, update, archive
 - Asset Layouts: list, get, create, update
-- Asset Passwords: list, get, create, update, delete
-- Articles: list, get, create, update, delete, archive
-- Websites: list, get, create, update, delete
+- Asset Passwords: list, get, create, update (password and OTP values are never returned)
+- Articles: list/search, get, create, update, archive
 - Folders: list
 - Procedures: list
-- Activity Logs: list
 - Relations: list
 - Magic Dash: list
 - Utility: test connection
+
+Note: there are no delete tools — destructive removal is intentionally not exposed.
 
 ## Authentication:
 - HUDU_BASE_URL (required) - Your Hudu instance URL

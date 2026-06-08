@@ -49,9 +49,6 @@ export class HuduToolHandler {
         const { id, ...data } = a;
         const r = await s.updateCompany(id, data); return { result: r, message: `Company ${id} updated successfully` };
       }],
-      ['hudu_delete_company', async (a) => {
-        await s.deleteCompany(a.id); return { result: null, message: `Company ${a.id} deleted successfully` };
-      }],
       ['hudu_archive_company', async (a) => {
         await s.archiveCompany(a.id); return { result: null, message: `Company ${a.id} archived successfully` };
       }],
@@ -72,9 +69,6 @@ export class HuduToolHandler {
       ['hudu_update_asset', async (a) => {
         const { id, company_id, ...data } = a;
         const r = await s.updateAsset(company_id, id, data); return { result: r, message: `Asset ${id} updated successfully` };
-      }],
-      ['hudu_delete_asset', async (a) => {
-        await s.deleteAsset(a.company_id, a.id); return { result: null, message: `Asset ${a.id} deleted successfully` };
       }],
       ['hudu_archive_asset', async (a) => {
         await s.archiveAsset(a.company_id, a.id); return { result: null, message: `Asset ${a.id} archived successfully` };
@@ -109,9 +103,6 @@ export class HuduToolHandler {
         const { id, ...data } = a;
         const r = await s.updateAssetPassword(id, data); return { result: r, message: `Asset password ${id} updated successfully` };
       }],
-      ['hudu_delete_asset_password', async (a) => {
-        await s.deleteAssetPassword(a.id); return { result: null, message: `Asset password ${a.id} deleted successfully` };
-      }],
 
       // Articles
       ['hudu_list_articles', async (a) => {
@@ -127,29 +118,8 @@ export class HuduToolHandler {
         const { id, ...data } = a;
         const r = await s.updateArticle(id, data); return { result: r, message: `Article ${id} updated successfully` };
       }],
-      ['hudu_delete_article', async (a) => {
-        await s.deleteArticle(a.id); return { result: null, message: `Article ${a.id} deleted successfully` };
-      }],
       ['hudu_archive_article', async (a) => {
         await s.archiveArticle(a.id); return { result: null, message: `Article ${a.id} archived successfully` };
-      }],
-
-      // Websites
-      ['hudu_list_websites', async (a) => {
-        const r = await s.listWebsites(a); return { result: r, message: `Found ${r.length} websites` };
-      }],
-      ['hudu_get_website', async (a) => {
-        const r = await s.getWebsite(a.id); return { result: r, message: 'Website retrieved successfully' };
-      }],
-      ['hudu_create_website', async (a) => {
-        const r = await s.createWebsite(a); return { result: r, message: 'Website created successfully' };
-      }],
-      ['hudu_update_website', async (a) => {
-        const { id, ...data } = a;
-        const r = await s.updateWebsite(id, data); return { result: r, message: `Website ${id} updated successfully` };
-      }],
-      ['hudu_delete_website', async (a) => {
-        await s.deleteWebsite(a.id); return { result: null, message: `Website ${a.id} deleted successfully` };
       }],
 
       // Folders
@@ -160,11 +130,6 @@ export class HuduToolHandler {
       // Procedures
       ['hudu_list_procedures', async (a) => {
         const r = await s.listProcedures(a); return { result: r, message: `Found ${r.length} procedures` };
-      }],
-
-      // Activity Logs
-      ['hudu_list_activity_logs', async (a) => {
-        const r = await s.listActivityLogs(a); return { result: r, message: `Found ${r.length} activity logs` };
       }],
 
       // Relations

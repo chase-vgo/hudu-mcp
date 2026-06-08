@@ -4,14 +4,16 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 
-MCP (Model Context Protocol) server for [Hudu](https://www.huduapp.com/) IT documentation platform. Provides 39 tools and 6 resources for managing companies, assets, articles, passwords, websites, and more through any MCP-compatible client.
+MCP (Model Context Protocol) server for [Hudu](https://www.huduapp.com/) IT documentation platform. Provides 29 tools and 6 resources for managing companies, assets, articles, passwords, and more through any MCP-compatible client.
 
 ## Features
 
-- **39 MCP tools** covering all major Hudu resources
+- **29 MCP tools** covering the major Hudu resources (no delete tools — see below)
 - **6 MCP resources** (3 list resources + 3 by-ID resource templates) for direct data access
 - **Dual transport** support: stdio (default) and HTTP Streamable
 - **Vendored Hudu API client** (`src/vendor/hudu`) — no private registry / token to build
+- **Read-safe secrets** — password tools and password/OTP-type asset fields never return secret values
+- **No destructive deletes** — delete tools are intentionally not exposed
 - **Company access control** via `HUDU_DISALLOWED_COMPANY_IDS`
 - **Transient-DNS retry** on Hudu API calls (handles container `EAI_AGAIN` blips)
 - **Lazy initialization** - SDK client created on first tool call
@@ -54,7 +56,7 @@ npm run build
 |---|---|---|---|
 | `HUDU_BASE_URL` | Yes | - | Your Hudu instance URL (e.g., `https://docs.example.com`) |
 | `HUDU_API_KEY` | Yes | - | Your Hudu API key |
-| `HUDU_DISALLOWED_COMPANY_IDS` | No | - | Comma-separated company IDs to hide from all tools and resources (companies + their assets, articles, websites, passwords). See [Restricting companies](#restricting-companies). |
+| `HUDU_DISALLOWED_COMPANY_IDS` | No | - | Comma-separated company IDs to hide from all tools and resources (companies + their assets, articles, passwords). See [Restricting companies](#restricting-companies). |
 | `MCP_TRANSPORT` | No | `stdio` | Transport type: `stdio` or `http` |
 | `MCP_HTTP_PORT` | No | `8080` | HTTP server port (when using `http` transport) |
 | `MCP_HTTP_HOST` | No | `0.0.0.0` | HTTP server host |
@@ -76,17 +78,17 @@ The filter is enforced for both tools and resources:
 
 - `hudu_list_companies` (and the `hudu://companies` resource) omit the listed IDs.
 - `hudu_get_company` and the mutating company tools reject a disallowed ID with an error.
-- List endpoints for assets, articles, websites, passwords, folders, procedures,
-  activity logs, relations, and Magic Dash drop rows whose `company_id` is disallowed —
-  this is the primary guard, since it's what hides those records (and their IDs) from a client.
+- List endpoints for assets, articles, passwords, folders, procedures, relations, and
+  Magic Dash drop rows whose `company_id` is disallowed — this is the primary guard, since
+  it's what hides those records (and their IDs) from a client.
 - Getting a child record whose `company_id` is disallowed, or creating/updating one with a
   disallowed `company_id` in the payload, is rejected. Records with no company (global
   articles, asset layouts) are unaffected.
 
-> Note: deleting/archiving a child record by raw ID is **not** pre-checked against the
-> disallow list, because Hudu has no reliable bare get-by-ID for those records to resolve
-> the owning company without breaking the operation. In practice a client can't reach those
-> IDs anyway — list and get already hide disallowed companies' records.
+> Note: `hudu_archive_article` by raw ID is **not** pre-checked against the disallow list
+> (an article isn't fetched first to resolve its company). Asset archive *is* checked, since
+> it resolves the owning company first. In practice a client can't reach a disallowed
+> company's record IDs anyway — list and get already hide them.
 
 ## Run with Docker Compose
 
@@ -141,9 +143,12 @@ The HTTP server exposes two endpoints: **`POST /mcp`** (the MCP Streamable HTTP 
 stateless JSON, no session affinity) and **`GET /health`** (liveness). Front it with a reverse
 proxy for TLS/auth and point your MCP client at `/mcp`.
 
-## Tools (39)
+## Tools (29)
 
-### Companies (8 tools)
+> **No delete tools.** Deleting companies, assets, passwords, and articles is intentionally
+> not exposed by this server. The most destructive available action is archive (reversible).
+
+### Companies (7 tools)
 
 | Tool | Description |
 |---|---|
@@ -151,12 +156,11 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 | `hudu_get_company` | Get a company by ID |
 | `hudu_create_company` | Create a new company |
 | `hudu_update_company` | Update an existing company |
-| `hudu_delete_company` | Delete a company |
 | `hudu_archive_company` | Archive a company |
 | `hudu_unarchive_company` | Unarchive a company |
 | `hudu_test_connection` | Test the connection to Hudu API |
 
-### Assets (6 tools)
+### Assets (5 tools)
 
 | Tool | Description |
 |---|---|
@@ -164,11 +168,10 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 | `hudu_get_asset` | Get an asset by ID |
 | `hudu_create_asset` | Create a new asset (requires `company_id`) |
 | `hudu_update_asset` | Update an existing asset (`company_id` optional — auto-resolved) |
-| `hudu_delete_asset` | Delete an asset (`company_id` optional — auto-resolved) |
 | `hudu_archive_asset` | Archive an asset (`company_id` optional — auto-resolved) |
 
 > Hudu addresses a single asset under its owning company
-> (`/api/v1/companies/{company_id}/assets/{id}`). For `update`/`delete`/`archive` you may pass
+> (`/api/v1/companies/{company_id}/assets/{id}`). For `update`/`archive` you may pass
 > `company_id` explicitly, but if you omit it the server resolves it from the asset
 > automatically — so `{ "id": 333 }` is enough.
 >
@@ -189,17 +192,24 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 | `hudu_create_asset_layout` | Create a new asset layout |
 | `hudu_update_asset_layout` | Update an existing asset layout |
 
-### Asset Passwords (5 tools)
+### Asset Passwords (4 tools)
 
 | Tool | Description |
 |---|---|
-| `hudu_list_asset_passwords` | List asset passwords |
-| `hudu_get_asset_password` | Get an asset password by ID |
+| `hudu_list_asset_passwords` | List asset passwords (secret/OTP values omitted) |
+| `hudu_get_asset_password` | Get an asset password by ID (secret/OTP values omitted) |
 | `hudu_create_asset_password` | Create a new asset password |
 | `hudu_update_asset_password` | Update an existing asset password |
-| `hudu_delete_asset_password` | Delete an asset password |
 
-### Articles (6 tools)
+> **Secrets are never returned.** The read/create/update password tools strip the
+> `password` and `otp_secret` fields before responding — callers see name, username,
+> url, type, and notes, but never the secret value or OTP seed. (Create/update still
+> *accept* a password to store; they just don't echo it back.) Likewise, password/OTP-type
+> **custom fields on assets** have their values replaced with `[redacted]` in every asset
+> response (`hudu_get_asset`, `hudu_list_assets`, create/update), and such values are not
+> searchable.
+
+### Articles (5 tools)
 
 | Tool | Description |
 |---|---|
@@ -207,26 +217,14 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 | `hudu_get_article` | Get an article by ID |
 | `hudu_create_article` | Create a new article |
 | `hudu_update_article` | Update an existing article |
-| `hudu_delete_article` | Delete an article |
 | `hudu_archive_article` | Archive an article |
 
-### Websites (5 tools)
-
-| Tool | Description |
-|---|---|
-| `hudu_list_websites` | List monitored websites |
-| `hudu_get_website` | Get a website by ID |
-| `hudu_create_website` | Create a new website |
-| `hudu_update_website` | Update an existing website |
-| `hudu_delete_website` | Delete a website |
-
-### Other Resources (5 tools)
+### Other Resources (4 tools)
 
 | Tool | Description |
 |---|---|
 | `hudu_list_folders` | List folders |
 | `hudu_list_procedures` | List procedures |
-| `hudu_list_activity_logs` | List activity logs |
 | `hudu_list_relations` | List relations |
 | `hudu_list_magic_dash` | List Magic Dash items |
 

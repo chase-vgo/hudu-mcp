@@ -64,6 +64,26 @@ export class HuduService {
     return this.buildHaystack(parts);
   }
 
+  // Asset custom fields can be password/OTP-type — never return their values.
+  private static readonly SECRET_FIELD_TYPE = /password|otp|secret|confidential/i;
+
+  /** Replace the value of any secret-type custom field on an asset with a placeholder. */
+  private redactAssetSecrets<T extends Record<string, any>>(asset: T): T {
+    if (!asset || typeof asset !== 'object' || !Array.isArray((asset as any).fields)) return asset;
+    const fields = (asset as any).fields.map((f: any) => {
+      if (
+        f && typeof f === 'object' &&
+        typeof f.field_type === 'string' &&
+        HuduService.SECRET_FIELD_TYPE.test(f.field_type) &&
+        f.value != null && f.value !== ''
+      ) {
+        return { ...f, value: '[redacted]' };
+      }
+      return f;
+    });
+    return { ...asset, fields };
+  }
+
   /**
    * Map folder id -> full path name (e.g. "Cloudflare setup / SSO") for the given
    * company, walking parent_folder_id so a search can match a parent folder's name.
@@ -200,12 +220,6 @@ export class HuduService {
     return client.companies.update(id, data);
   }
 
-  async deleteCompany(id: number): Promise<void> {
-    this.assertCompanyAllowed(id);
-    const client = await this.ensureClient();
-    await client.companies.delete(id);
-  }
-
   async archiveCompany(id: number): Promise<void> {
     this.assertCompanyAllowed(id);
     const client = await this.ensureClient();
@@ -230,25 +244,27 @@ export class HuduService {
     // field labels/values.
     if (name != null && String(name).trim() !== '') {
       const needle = String(name).toLowerCase();
-      const all = await client.assets.listAll(serverParams);
+      // Redact first so secret field values are neither searchable nor returned.
+      const all = (await client.assets.listAll(serverParams)).map((a: any) => this.redactAssetSecrets(a));
       const matched = all.filter((a: any) => this.assetHaystack(a).includes(needle));
       return this.filterByCompany(matched, 'company_id');
     }
 
-    return this.filterByCompany(await client.assets.list(serverParams), 'company_id');
+    const assets = (await client.assets.list(serverParams)).map((a: any) => this.redactAssetSecrets(a));
+    return this.filterByCompany(assets, 'company_id');
   }
 
   async getAsset(id: number): Promise<any> {
     const client = await this.ensureClient();
     const asset = await client.assets.get(id);
     this.assertCompanyAllowed(asset?.company_id);
-    return asset;
+    return this.redactAssetSecrets(asset);
   }
 
   async createAsset(data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
     const client = await this.ensureClient();
-    return client.assets.create(data);
+    return this.redactAssetSecrets(await client.assets.create(data));
   }
 
   /**
@@ -272,13 +288,7 @@ export class HuduService {
   async updateAsset(companyId: number | undefined, id: number, data: any): Promise<any> {
     const cid = await this.resolveAssetCompanyId(companyId, id);
     const client = await this.ensureClient();
-    return client.assets.update(cid, id, data);
-  }
-
-  async deleteAsset(companyId: number | undefined, id: number): Promise<void> {
-    const cid = await this.resolveAssetCompanyId(companyId, id);
-    const client = await this.ensureClient();
-    await client.assets.delete(cid, id);
+    return this.redactAssetSecrets(await client.assets.update(cid, id, data));
   }
 
   async archiveAsset(companyId: number | undefined, id: number): Promise<void> {
@@ -286,6 +296,7 @@ export class HuduService {
     const client = await this.ensureClient();
     await client.assets.archive(cid, id);
   }
+  // (asset deletion intentionally not exposed)
 
   // Asset Layouts
   async listAssetLayouts(params?: any): Promise<any[]> {
@@ -309,33 +320,38 @@ export class HuduService {
   }
 
   // Asset Passwords
+  // Reads never expose secret material: `password` and `otp_secret` are stripped
+  // before any record leaves the service. Name, username, url, type, and notes
+  // (description) are preserved.
+  private redactAssetPassword<T extends Record<string, any>>(record: T): T {
+    if (!record || typeof record !== 'object') return record;
+    const { password: _password, otp_secret: _otpSecret, ...safe } = record as any;
+    return safe as T;
+  }
+
   async listAssetPasswords(params?: any): Promise<any[]> {
     const client = await this.ensureClient();
-    return this.filterByCompany(await client.assetPasswords.list(params), 'company_id');
+    const records = this.filterByCompany(await client.assetPasswords.list(params), 'company_id');
+    return records.map((r: any) => this.redactAssetPassword(r));
   }
 
   async getAssetPassword(id: number): Promise<any> {
     const client = await this.ensureClient();
     const password = await client.assetPasswords.get(id);
     this.assertCompanyAllowed(password?.company_id);
-    return password;
+    return this.redactAssetPassword(password);
   }
 
   async createAssetPassword(data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
     const client = await this.ensureClient();
-    return client.assetPasswords.create(data);
+    return this.redactAssetPassword(await client.assetPasswords.create(data));
   }
 
   async updateAssetPassword(id: number, data: any): Promise<any> {
     this.assertCompanyAllowed(data?.company_id);
     const client = await this.ensureClient();
-    return client.assetPasswords.update(id, data);
-  }
-
-  async deleteAssetPassword(id: number): Promise<void> {
-    const client = await this.ensureClient();
-    await client.assetPasswords.delete(id);
+    return this.redactAssetPassword(await client.assetPasswords.update(id, data));
   }
 
   // Articles
@@ -383,44 +399,9 @@ export class HuduService {
     return client.articles.update(id, data);
   }
 
-  async deleteArticle(id: number): Promise<void> {
-    const client = await this.ensureClient();
-    await client.articles.delete(id);
-  }
-
   async archiveArticle(id: number): Promise<void> {
     const client = await this.ensureClient();
     await client.articles.archive(id);
-  }
-
-  // Websites
-  async listWebsites(params?: any): Promise<any[]> {
-    const client = await this.ensureClient();
-    return this.filterByCompany(await client.websites.list(params), 'company_id');
-  }
-
-  async getWebsite(id: number): Promise<any> {
-    const client = await this.ensureClient();
-    const website = await client.websites.get(id);
-    this.assertCompanyAllowed(website?.company_id);
-    return website;
-  }
-
-  async createWebsite(data: any): Promise<any> {
-    this.assertCompanyAllowed(data?.company_id);
-    const client = await this.ensureClient();
-    return client.websites.create(data);
-  }
-
-  async updateWebsite(id: number, data: any): Promise<any> {
-    this.assertCompanyAllowed(data?.company_id);
-    const client = await this.ensureClient();
-    return client.websites.update(id, data);
-  }
-
-  async deleteWebsite(id: number): Promise<void> {
-    const client = await this.ensureClient();
-    await client.websites.delete(id);
   }
 
   // Folders
@@ -433,12 +414,6 @@ export class HuduService {
   async listProcedures(params?: any): Promise<any[]> {
     const client = await this.ensureClient();
     return this.filterByCompany(await client.procedures.list(params), 'company_id');
-  }
-
-  // Activity Logs
-  async listActivityLogs(params?: any): Promise<any[]> {
-    const client = await this.ensureClient();
-    return this.filterByCompany(await client.activityLogs.list(params), 'company_id');
   }
 
   // Relations
