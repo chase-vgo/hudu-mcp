@@ -160,7 +160,7 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 
 | Tool | Description |
 |---|---|
-| `hudu_list_assets` | List assets with optional filters |
+| `hudu_list_assets` | List/search assets — `name` keyword-matches name, identity fields & custom fields |
 | `hudu_get_asset` | Get an asset by ID |
 | `hudu_create_asset` | Create a new asset (requires `company_id`) |
 | `hudu_update_asset` | Update an existing asset (`company_id` optional — auto-resolved) |
@@ -171,6 +171,14 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 > (`/api/v1/companies/{company_id}/assets/{id}`). For `update`/`delete`/`archive` you may pass
 > `company_id` explicitly, but if you omit it the server resolves it from the asset
 > automatically — so `{ "id": 333 }` is enough.
+>
+> **Keyword search.** Hudu's own `name` filter is exact-match, so `hudu_list_assets` and
+> `hudu_list_articles` implement `name` as a **case-insensitive keyword search** instead: when
+> `name` is set the server fetches the (server-filtered) set across all pages and matches locally.
+> Assets match on name, identity fields (serial/model/manufacturer) and custom field
+> labels/values; articles match on name, body content, and the article's full folder path
+> (e.g. "Cloudflare" finds an article in the "Cloudflare setup" folder). Scope with `company_id`
+> to keep these searches fast.
 
 ### Asset Layouts (4 tools)
 
@@ -195,7 +203,7 @@ proxy for TLS/auth and point your MCP client at `/mcp`.
 
 | Tool | Description |
 |---|---|
-| `hudu_list_articles` | List knowledge base articles |
+| `hudu_list_articles` | List/search articles — `name` keyword-matches name, body & folder path |
 | `hudu_get_article` | Get an article by ID |
 | `hudu_create_article` | Create a new article |
 | `hudu_update_article` | Update an existing article |

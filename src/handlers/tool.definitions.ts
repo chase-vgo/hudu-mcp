@@ -164,15 +164,19 @@ export const TOOL_DEFINITIONS: McpTool[] = [
   // Assets
   {
     name: 'hudu_list_assets',
-    description: 'List assets in Hudu with optional filters',
+    description:
+      'List/search assets in Hudu. `name` is a case-insensitive keyword search across the ' +
+      'asset name, identity fields (serial/model/manufacturer), and all custom field ' +
+      'labels/values (e.g. "VPN" matches "OpenVPN" or an asset whose notes mention VPN). ' +
+      'Pass `company_id` to scope the search to one company.',
     inputSchema: {
       type: 'object',
       properties: {
-        page: { type: 'number', description: 'Page number' },
+        page: { type: 'number', description: 'Page number (ignored when `name` is set — keyword search spans all pages)' },
         page_size: { type: 'number', description: 'Results per page' },
-        company_id: { type: 'number', description: 'Filter by company ID' },
+        company_id: { type: 'number', description: 'Filter by company ID (recommended when searching by name)' },
         asset_layout_id: { type: 'number', description: 'Filter by asset layout ID' },
-        name: { type: 'string', description: 'Filter by name' },
+        name: { type: 'string', description: 'Case-insensitive keyword search over name, identity fields, and custom fields' },
         primary_serial: { type: 'string', description: 'Filter by serial number' },
         archived: { type: 'boolean', description: 'Filter by archived status' }
       },
@@ -437,14 +441,17 @@ export const TOOL_DEFINITIONS: McpTool[] = [
   // Articles
   {
     name: 'hudu_list_articles',
-    description: 'List knowledge base articles in Hudu',
+    description:
+      'List/search knowledge base articles in Hudu. `name` is a case-insensitive keyword ' +
+      'search across the article name, body content, and its folder path (e.g. "Cloudflare" ' +
+      'finds an article inside the "Cloudflare setup" folder). Pass `company_id` to scope it.',
     inputSchema: {
       type: 'object',
       properties: {
-        page: { type: 'number', description: 'Page number' },
+        page: { type: 'number', description: 'Page number (ignored when `name` is set — keyword search spans all pages)' },
         page_size: { type: 'number', description: 'Results per page' },
-        company_id: { type: 'number', description: 'Filter by company ID' },
-        name: { type: 'string', description: 'Filter by name' },
+        company_id: { type: 'number', description: 'Filter by company ID (recommended when searching by name)' },
+        name: { type: 'string', description: 'Case-insensitive keyword search over article name, body content, and folder path' },
         draft: { type: 'boolean', description: 'Filter by draft status' }
       },
       required: []

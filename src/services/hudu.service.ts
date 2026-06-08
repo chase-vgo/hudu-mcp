@@ -40,6 +40,62 @@ export class HuduService {
     return records.filter(r => !this.isDisallowed((r as any)?.[key]));
   }
 
+  // --- Client-side keyword search (Hudu's `name` filter is exact-match only) ---
+
+  /** Lowercased blob of the given values for case-insensitive substring matching. */
+  private buildHaystack(parts: Array<unknown>): string {
+    const out: string[] = [];
+    for (const v of parts) {
+      if (v == null) continue;
+      out.push(typeof v === 'object' ? JSON.stringify(v) : String(v));
+    }
+    return out.join('\n').toLowerCase();
+  }
+
+  /** Text blob for an asset: name + identity fields + every custom field label/value. */
+  private assetHaystack(asset: any): string {
+    const parts: unknown[] = [
+      asset?.name, asset?.primary_serial, asset?.primary_model,
+      asset?.primary_manufacturer, asset?.primary_mail,
+    ];
+    if (Array.isArray(asset?.fields)) {
+      for (const f of asset.fields) parts.push(f?.label, f?.value);
+    }
+    return this.buildHaystack(parts);
+  }
+
+  /**
+   * Map folder id -> full path name (e.g. "Cloudflare setup / SSO") for the given
+   * company, walking parent_folder_id so a search can match a parent folder's name.
+   */
+  private async buildFolderPathMap(companyId?: number): Promise<Map<number, string>> {
+    const client = await this.ensureClient();
+    const folders = await client.folders.listAll(companyId != null ? { company_id: companyId } : undefined);
+    const byId = new Map<number, any>();
+    for (const f of folders) byId.set(Number(f.id), f);
+
+    const pathOf = (id: number | null | undefined, seen: Set<number>): string => {
+      if (id == null) return '';
+      const f = byId.get(Number(id));
+      if (!f || seen.has(Number(f.id))) return '';
+      seen.add(Number(f.id));
+      const name = String(f.name ?? '');
+      const parent = pathOf(f.parent_folder_id, seen);
+      return parent ? `${parent} / ${name}` : name;
+    };
+
+    const paths = new Map<number, string>();
+    for (const f of folders) paths.set(Number(f.id), pathOf(Number(f.id), new Set<number>()));
+    return paths;
+  }
+
+  /** Text blob for an article: name + body content + its folder's full path name. */
+  private articleHaystack(article: any, folderPaths: Map<number, string>): string {
+    const parts: unknown[] = [article?.name, article?.content];
+    if (article?.folder_id != null) parts.push(folderPaths.get(Number(article.folder_id)));
+    return this.buildHaystack(parts);
+  }
+
   private async ensureClient(): Promise<HuduClient> {
     if (!this.client) {
       await this.ensureInitialized();
@@ -165,7 +221,21 @@ export class HuduService {
   // Assets
   async listAssets(params?: any): Promise<any[]> {
     const client = await this.ensureClient();
-    return this.filterByCompany(await client.assets.list(params), 'company_id');
+    const { name, ...serverParams } = params ?? {};
+
+    // Hudu's `name` filter is an exact match, which surprises callers searching
+    // for a keyword (e.g. "VPN" won't match "OpenVPN"). When `name` is given,
+    // fetch the server-filtered set (across pages) and substring-match it
+    // case-insensitively across the asset's name, identity fields, and custom
+    // field labels/values.
+    if (name != null && String(name).trim() !== '') {
+      const needle = String(name).toLowerCase();
+      const all = await client.assets.listAll(serverParams);
+      const matched = all.filter((a: any) => this.assetHaystack(a).includes(needle));
+      return this.filterByCompany(matched, 'company_id');
+    }
+
+    return this.filterByCompany(await client.assets.list(serverParams), 'company_id');
   }
 
   async getAsset(id: number): Promise<any> {
@@ -271,7 +341,27 @@ export class HuduService {
   // Articles
   async listArticles(params?: any): Promise<any[]> {
     const client = await this.ensureClient();
-    return this.filterByCompany(await client.articles.list(params), 'company_id');
+    const { name, ...serverParams } = params ?? {};
+
+    // `name` is a case-insensitive keyword search across the article's name, body
+    // content, and its folder's full path name (so e.g. "Cloudflare" finds an
+    // article in the "Cloudflare setup" folder). Hudu's own `name` filter is exact,
+    // so we fetch the server-filtered set across pages and match client-side.
+    if (name != null && String(name).trim() !== '') {
+      const needle = String(name).toLowerCase();
+      const [articles, folderPaths] = await Promise.all([
+        client.articles.listAll(serverParams),
+        // Folder names are an enhancement — if the lookup fails, still match name/content.
+        this.buildFolderPathMap(serverParams.company_id).catch((error) => {
+          this.logger.warn('Folder lookup for article search failed; matching name/content only', error);
+          return new Map<number, string>();
+        }),
+      ]);
+      const matched = articles.filter((a: any) => this.articleHaystack(a, folderPaths).includes(needle));
+      return this.filterByCompany(matched, 'company_id');
+    }
+
+    return this.filterByCompany(await client.articles.list(serverParams), 'company_id');
   }
 
   async getArticle(id: number): Promise<any> {
