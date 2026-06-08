@@ -17,23 +17,10 @@ MCP (Model Context Protocol) server for [Hudu](https://www.huduapp.com/) IT docu
 
 ## One-Click Deployment
 
-> [!IMPORTANT]
-> **Before you click:** this server depends on `@wyre-technology/node-hudu`,
-> which is hosted on the **GitHub Packages** npm registry. GitHub Packages has no
-> anonymous access — even though the package is public, every `npm install` needs a
-> token. The cloud builder runs `npm install` for you, so you must give it one, or
-> the build fails with `npm error 401 Unauthorized ... npm.pkg.github.com`.
->
-> 1. Create a GitHub **Personal Access Token** with the `read:packages` scope
->    ([classic token](https://github.com/settings/tokens/new?scopes=read:packages&description=hudu-mcp%20deploy)).
->    Any GitHub account works — you do **not** need to be a member of the
->    `wyre-technology` org to read its public packages.
-> 2. Add it as a build variable when prompted by the deploy flow:
->    - **DigitalOcean App Platform** → set an encrypted env var named **`NODE_AUTH_TOKEN`**
->      with scope **Build Time** to your PAT (the `Dockerfile` reads it via
->      `ARG NODE_AUTH_TOKEN` to authenticate `npm ci`).
->    - **Cloudflare Workers** → set a build variable named **`NODE_AUTH_TOKEN`** to your PAT
->      (Workers → Settings → Build → Variables and Secrets).
+> [!NOTE]
+> The Hudu API client is vendored in-repo (`src/vendor/hudu`), so builds need **no
+> registry token** — every dependency is public on npmjs. Just deploy; the cloud
+> builder runs `npm install` with no extra credentials.
 
 [![Deploy to DO](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/wyre-technology/hudu-mcp/tree/main)
 
@@ -47,23 +34,16 @@ MCP (Model Context Protocol) server for [Hudu](https://www.huduapp.com/) IT docu
 
 ## Installation
 
-This project depends on `@wyre-technology/node-hudu`, published to the **GitHub
-Packages** npm registry, which requires a token even for public packages.
-Authenticate npm once before installing:
+All dependencies are public on npmjs (the Hudu API client is vendored under
+`src/vendor/hudu`), so no registry auth or token is required:
 
 ```bash
 git clone https://github.com/wyre-technology/hudu-mcp.git
 cd hudu-mcp
 
-# Authenticate npm to GitHub Packages (token needs the read:packages scope)
-export NODE_AUTH_TOKEN=$(gh auth token)   # or a PAT with read:packages
-
 npm install
 npm run build
 ```
-
-The repo's `.npmrc` already points the `@wyre-technology` scope at GitHub Packages and
-reads the token from `NODE_AUTH_TOKEN`, so no further config is needed.
 
 ## Configuration
 
@@ -108,24 +88,20 @@ The filter is enforced for both tools and resources:
 ## Run with Docker Compose
 
 The repo ships a `docker-compose.yml` that builds the image and runs the server as an
-HTTP service on port 8080 — no local Node/npm required, Docker runs the install during
-the build.
-
-Because `@wyre-technology/node-hudu` lives on GitHub Packages, the **build** needs a
-GitHub Personal Access Token with the `read:packages` scope, passed as `NODE_AUTH_TOKEN`.
-The compose file wires it through to the `Dockerfile`'s `ARG NODE_AUTH_TOKEN`.
+HTTP service on port 3100 — no local Node/npm and no registry token required (the Hudu
+SDK is vendored in-repo, and Docker runs the install during the build).
 
 ```bash
-cp .env.example .env        # then edit: NODE_AUTH_TOKEN, HUDU_BASE_URL, HUDU_API_KEY, ...
+cp .env.example .env        # then edit: HUDU_BASE_URL, HUDU_API_KEY, HUDU_DISALLOWED_COMPANY_IDS
 
-docker compose build        # fails if NODE_AUTH_TOKEN is unset
+docker compose build
 docker compose up -d
 
-curl http://localhost:8080/health   # verify it's running
+curl http://localhost:3100/health   # verify it's running
 ```
 
-Docker Compose auto-loads `.env` for variable substitution, so the same file supplies
-both the build-time token and the runtime Hudu configuration.
+Docker Compose auto-loads `.env` for variable substitution. Point your reverse proxy /
+MCP client at the `/mcp` endpoint on port 3100.
 
 ## Usage
 

@@ -5,22 +5,16 @@ FROM node:22-alpine AS builder
 ARG VERSION="unknown"
 ARG COMMIT_SHA="unknown"
 ARG BUILD_DATE="unknown"
-ARG NODE_AUTH_TOKEN
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files and .npmrc for GitHub Packages auth
-COPY package*.json .npmrc ./
-
-# Configure registry auth for GitHub Packages (needed to pull @wyre-technology/* deps)
-RUN echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
+# Copy package manifest. All dependencies are public on npmjs — the Hudu SDK is
+# vendored under src/vendor/hudu, so no registry auth / token is required.
+COPY package.json ./
 
 # Install dependencies (--ignore-scripts prevents 'prepare' from running before source is copied)
-RUN npm ci --ignore-scripts
-
-# Remove auth token from .npmrc after install
-RUN sed -i '/_authToken/d' .npmrc
+RUN npm install --ignore-scripts
 
 # Copy source code
 COPY . .
@@ -28,7 +22,7 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Prune dev dependencies while auth is still available
+# Prune dev dependencies
 RUN npm prune --omit=dev && npm cache clean --force
 
 # Production stage

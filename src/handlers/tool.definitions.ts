@@ -208,13 +208,13 @@ export const TOOL_DEFINITIONS: McpTool[] = [
   },
   {
     name: 'hudu_update_asset',
-    description: 'Update an existing asset in Hudu',
+    description: 'Update an existing asset in Hudu. Requires the owning company_id (Hudu addresses assets under their company).',
     inputSchema: {
       type: 'object',
       properties: {
         id: { type: 'number', description: 'Asset ID' },
+        company_id: { type: 'number', description: 'Owning company ID (required)' },
         name: { type: 'string', description: 'Asset name' },
-        company_id: { type: 'number', description: 'Company ID' },
         asset_layout_id: { type: 'number', description: 'Asset layout ID' },
         primary_serial: { type: 'string', description: 'Serial number' },
         primary_model: { type: 'string', description: 'Model' },
@@ -222,7 +222,7 @@ export const TOOL_DEFINITIONS: McpTool[] = [
         primary_mail: { type: 'string', description: 'Email' },
         custom_fields: { type: 'object', description: 'Custom field values' }
       },
-      required: ['id']
+      required: ['id', 'company_id']
     }
   },
   {
@@ -230,7 +230,7 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     description:
       '⚠ DESTRUCTIVE — IRREVERSIBLE. Permanently deletes an asset and all of its ' +
       'associated data, passwords, and configuration information. This action cannot be undone. ' +
-      'Confirm with the user before invoking.',
+      'Requires the owning company_id. Confirm with the user before invoking.',
     annotations: {
       title: 'Delete asset (irreversible)',
       readOnlyHint: false,
@@ -240,8 +240,11 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     },
     inputSchema: {
       type: 'object',
-      properties: { id: { type: 'number', description: 'Asset ID' } },
-      required: ['id']
+      properties: {
+        id: { type: 'number', description: 'Asset ID' },
+        company_id: { type: 'number', description: 'Owning company ID (required)' }
+      },
+      required: ['id', 'company_id']
     }
   },
   {
@@ -249,7 +252,7 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     description:
       '⚠ HIGH-IMPACT. Archives an asset, removing it from active use and hiding ' +
       'it from normal asset listings and operations. Reversible by unarchiving. ' +
-      'Confirm with the user before invoking.',
+      'Requires the owning company_id. Confirm with the user before invoking.',
     annotations: {
       title: 'Archive asset (reversible)',
       readOnlyHint: false,
@@ -259,8 +262,11 @@ export const TOOL_DEFINITIONS: McpTool[] = [
     },
     inputSchema: {
       type: 'object',
-      properties: { id: { type: 'number', description: 'Asset ID' } },
-      required: ['id']
+      properties: {
+        id: { type: 'number', description: 'Asset ID' },
+        company_id: { type: 'number', description: 'Owning company ID (required)' }
+      },
+      required: ['id', 'company_id']
     }
   },
 

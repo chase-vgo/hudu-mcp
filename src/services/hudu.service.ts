@@ -1,4 +1,4 @@
-import { HuduClient } from '@wyre-technology/node-hudu';
+import { HuduClient } from '../vendor/hudu/index.js';
 import { McpServerConfig } from '../types/mcp.js';
 import { Logger } from '../utils/logger.js';
 
@@ -181,20 +181,22 @@ export class HuduService {
     return client.assets.create(data);
   }
 
-  async updateAsset(id: number, data: any): Promise<any> {
-    this.assertCompanyAllowed(data?.company_id);
+  async updateAsset(companyId: number, id: number, data: any): Promise<any> {
+    this.assertCompanyAllowed(companyId);
     const client = await this.ensureClient();
-    return client.assets.update(id, data);
+    return client.assets.update(companyId, id, data);
   }
 
-  async deleteAsset(id: number): Promise<void> {
+  async deleteAsset(companyId: number, id: number): Promise<void> {
+    this.assertCompanyAllowed(companyId);
     const client = await this.ensureClient();
-    await client.assets.delete(id);
+    await client.assets.delete(companyId, id);
   }
 
-  async archiveAsset(id: number): Promise<void> {
+  async archiveAsset(companyId: number, id: number): Promise<void> {
+    this.assertCompanyAllowed(companyId);
     const client = await this.ensureClient();
-    await client.assets.archive(id);
+    await client.assets.archive(companyId, id);
   }
 
   // Asset Layouts

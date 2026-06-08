@@ -70,14 +70,14 @@ export class HuduToolHandler {
         const r = await s.createAsset(a); return { result: r, message: 'Asset created successfully' };
       }],
       ['hudu_update_asset', async (a) => {
-        const { id, ...data } = a;
-        const r = await s.updateAsset(id, data); return { result: r, message: `Asset ${id} updated successfully` };
+        const { id, company_id, ...data } = a;
+        const r = await s.updateAsset(company_id, id, data); return { result: r, message: `Asset ${id} updated successfully` };
       }],
       ['hudu_delete_asset', async (a) => {
-        await s.deleteAsset(a.id); return { result: null, message: `Asset ${a.id} deleted successfully` };
+        await s.deleteAsset(a.company_id, a.id); return { result: null, message: `Asset ${a.id} deleted successfully` };
       }],
       ['hudu_archive_asset', async (a) => {
-        await s.archiveAsset(a.id); return { result: null, message: `Asset ${a.id} archived successfully` };
+        await s.archiveAsset(a.company_id, a.id); return { result: null, message: `Asset ${a.id} archived successfully` };
       }],
 
       // Asset Layouts

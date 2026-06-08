@@ -1,12 +1,9 @@
 services:
   hudu-mcp:
+    # The Hudu SDK is vendored under src/vendor/hudu, so the build needs no
+    # registry token — all remaining dependencies are public on npmjs.
     build:
       context: .
-      args:
-        # GitHub PAT with `read:packages` — needed at BUILD time only to pull
-        # @wyre-technology/node-hudu from GitHub Packages. Set it in your shell
-        # or in a .env file next to this compose file.
-        NODE_AUTH_TOKEN: ${NODE_AUTH_TOKEN:?Need a GitHub PAT with read:packages to build}
     image: hudu-mcp:local
     restart: unless-stopped
     ports:

@@ -18,7 +18,7 @@
  * `tools/list`, `resources/list` and `initialize` work without credentials;
  * only `tools/call` (and resource reads) require them.
  *
- * The Hudu SDK (`@wyre-technology/node-hudu`) uses the global `fetch` API, so
+ * The vendored Hudu SDK (`src/vendor/hudu`) uses the global `fetch` API, so
  * it runs natively on the Workers runtime with `nodejs_compat`.
  */
 
