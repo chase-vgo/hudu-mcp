@@ -497,6 +497,17 @@ export const TOOL_DEFINITIONS: McpTool[] = [
       required: []
     }
   },
+  {
+    name: 'hudu_get_procedure',
+    description: 'Get a single Hudu process or run by ID, including its full task list (procedure_tasks_attributes). Use this to drill into a process/run found via hudu_list_procedures, whose list view omits task detail.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'number', description: 'The process or run ID' }
+      },
+      required: ['id']
+    }
+  },
 
   // Relations
   {

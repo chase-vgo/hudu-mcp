@@ -411,9 +411,32 @@ export class HuduService {
   }
 
   // Procedures
+
+  /**
+   * Slim a process/run for list views. The list endpoint embeds the full
+   * `procedure_tasks_attributes` array (every task, with base64-encoded
+   * descriptions) on each record, which blows up the response and gets
+   * truncated when several runs are returned. Drop it here and surface a
+   * `task_count` instead; full task detail is available via getProcedure().
+   */
+  private summarizeProcedure<T extends Record<string, any>>(p: T): Record<string, any> {
+    if (!p || typeof p !== 'object') return p;
+    const { procedure_tasks_attributes, ...rest } = p as any;
+    if (Array.isArray(procedure_tasks_attributes)) {
+      return { ...rest, task_count: procedure_tasks_attributes.length };
+    }
+    return rest;
+  }
+
   async listProcedures(params?: any): Promise<any[]> {
     const client = await this.ensureClient();
-    return this.filterByCompany(await client.procedures.list(params), 'company_id');
+    const list = this.filterByCompany(await client.procedures.list(params), 'company_id');
+    return list.map((p: any) => this.summarizeProcedure(p));
+  }
+
+  async getProcedure(id: number): Promise<any> {
+    const client = await this.ensureClient();
+    return client.procedures.get(id);
   }
 
   // Relations

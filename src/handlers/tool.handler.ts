@@ -131,7 +131,10 @@ export class HuduToolHandler {
       ['hudu_list_procedures', async (a) => {
         const r = await s.listProcedures(a);
         const label = a?.type === 'run' ? 'runs' : a?.type === 'process' ? 'processes' : 'processes/runs';
-        return { result: r, message: `Found ${r.length} ${label}` };
+        return { result: r, message: `Found ${r.length} ${label} (task details omitted — use hudu_get_procedure for a single item's tasks)` };
+      }],
+      ['hudu_get_procedure', async (a) => {
+        const r = await s.getProcedure(a.id); return { result: r, message: `Procedure ${a.id} retrieved successfully` };
       }],
 
       // Relations
