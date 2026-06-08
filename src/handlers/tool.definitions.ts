@@ -201,7 +201,14 @@ export const TOOL_DEFINITIONS: McpTool[] = [
         primary_model: { type: 'string', description: 'Model' },
         primary_manufacturer: { type: 'string', description: 'Manufacturer' },
         primary_mail: { type: 'string', description: 'Email' },
-        custom_fields: { type: 'object', description: 'Custom field values' }
+        custom_fields: {
+          type: 'array',
+          description:
+            'Custom field values as an array of objects keyed by the field LABEL ' +
+            '(lowercased, spaces → underscores), e.g. [{ "approval_notes": "..." }]. ' +
+            'A single { } object is also accepted and wrapped automatically.',
+          items: { type: 'object' }
+        }
       },
       required: ['company_id', 'asset_layout_id', 'name']
     }
@@ -220,7 +227,14 @@ export const TOOL_DEFINITIONS: McpTool[] = [
         primary_model: { type: 'string', description: 'Model' },
         primary_manufacturer: { type: 'string', description: 'Manufacturer' },
         primary_mail: { type: 'string', description: 'Email' },
-        custom_fields: { type: 'object', description: 'Custom field values' }
+        custom_fields: {
+          type: 'array',
+          description:
+            'Custom field values as an array of objects keyed by the field LABEL ' +
+            '(lowercased, spaces → underscores), e.g. [{ "approval_notes": "..." }]. ' +
+            'A single { } object is also accepted and wrapped automatically.',
+          items: { type: 'object' }
+        }
       },
       required: ['id']
     }

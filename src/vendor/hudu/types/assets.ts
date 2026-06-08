@@ -51,7 +51,9 @@ export interface AssetCreateData {
   primary_model?: string;
   primary_manufacturer?: string;
   primary_mail?: string;
-  custom_fields?: Record<string, unknown>;
+  // Hudu expects an array of { field: value } objects. A single object is also
+  // accepted by this client and wrapped into an array before the request.
+  custom_fields?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
 export interface AssetUpdateData extends Partial<AssetCreateData> {}

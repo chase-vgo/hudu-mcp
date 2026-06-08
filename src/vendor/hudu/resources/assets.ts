@@ -62,7 +62,7 @@ export class AssetsResource {
       `/api/v1/companies/${data.company_id}/assets`,
       {
         method: 'POST',
-        body: { asset: data },
+        body: { asset: this.normalizeAssetBody(data) },
       }
     );
     return response.asset;
@@ -73,10 +73,22 @@ export class AssetsResource {
       `/api/v1/companies/${companyId}/assets/${id}`,
       {
         method: 'PUT',
-        body: { asset: data },
+        body: { asset: this.normalizeAssetBody(data) },
       }
     );
     return response.asset;
+  }
+
+  // Hudu requires `custom_fields` to be an array of objects ("use [ ] not { }").
+  // Accept the friendlier single-object form and wrap it so callers (and LLMs)
+  // don't have to know the quirk.
+  private normalizeAssetBody(data: AssetCreateData | AssetUpdateData): Record<string, unknown> {
+    const body: Record<string, unknown> = { ...data };
+    const cf = body.custom_fields;
+    if (cf && typeof cf === 'object' && !Array.isArray(cf)) {
+      body.custom_fields = [cf];
+    }
+    return body;
   }
 
   async delete(companyId: number, id: number): Promise<void> {

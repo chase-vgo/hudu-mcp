@@ -9,8 +9,11 @@ MCP (Model Context Protocol) server for [Hudu](https://www.huduapp.com/) IT docu
 ## Features
 
 - **39 MCP tools** covering all major Hudu resources
-- **6 MCP resources** for direct data access
+- **6 MCP resources** (3 list resources + 3 by-ID resource templates) for direct data access
 - **Dual transport** support: stdio (default) and HTTP Streamable
+- **Vendored Hudu API client** (`src/vendor/hudu`) — no private registry / token to build
+- **Company access control** via `HUDU_DISALLOWED_COMPANY_IDS`
+- **Transient-DNS retry** on Hudu API calls (handles container `EAI_AGAIN` blips)
 - **Lazy initialization** - SDK client created on first tool call
 - **Connection testing** built-in
 - **All logging to stderr** to avoid polluting MCP stdio transport
@@ -134,6 +137,10 @@ MCP_HTTP_PORT=8080 \
 npm start
 ```
 
+The HTTP server exposes two endpoints: **`POST /mcp`** (the MCP Streamable HTTP endpoint —
+stateless JSON, no session affinity) and **`GET /health`** (liveness). Front it with a reverse
+proxy for TLS/auth and point your MCP client at `/mcp`.
+
 ## Tools (39)
 
 ### Companies (8 tools)
@@ -155,10 +162,15 @@ npm start
 |---|---|
 | `hudu_list_assets` | List assets with optional filters |
 | `hudu_get_asset` | Get an asset by ID |
-| `hudu_create_asset` | Create a new asset |
-| `hudu_update_asset` | Update an existing asset |
-| `hudu_delete_asset` | Delete an asset |
-| `hudu_archive_asset` | Archive an asset |
+| `hudu_create_asset` | Create a new asset (requires `company_id`) |
+| `hudu_update_asset` | Update an existing asset (`company_id` optional — auto-resolved) |
+| `hudu_delete_asset` | Delete an asset (`company_id` optional — auto-resolved) |
+| `hudu_archive_asset` | Archive an asset (`company_id` optional — auto-resolved) |
+
+> Hudu addresses a single asset under its owning company
+> (`/api/v1/companies/{company_id}/assets/{id}`). For `update`/`delete`/`archive` you may pass
+> `company_id` explicitly, but if you omit it the server resolves it from the asset
+> automatically — so `{ "id": 333 }` is enough.
 
 ### Asset Layouts (4 tools)
 
@@ -212,14 +224,42 @@ npm start
 
 ## Resources
 
+List resources (returned by `resources/list`):
+
 | URI | Description |
 |---|---|
 | `hudu://companies` | List of all companies |
-| `hudu://companies/{id}` | Company details by ID |
 | `hudu://assets` | List of all assets |
-| `hudu://assets/{id}` | Asset details by ID |
 | `hudu://articles` | List of all articles |
+
+By-ID resource templates (returned by `resources/templates/list`):
+
+| URI Template | Description |
+|---|---|
+| `hudu://companies/{id}` | Company details by ID |
+| `hudu://assets/{id}` | Asset details by ID |
 | `hudu://articles/{id}` | Article details by ID |
+
+## Implementation notes
+
+### Vendored Hudu API client
+
+The Hudu API client lives in-repo at `src/vendor/hudu` (forked from `@wyre-technology/node-hudu`)
+rather than being pulled from a private registry. This removes the GitHub Packages dependency and
+the build-time token entirely, and lets us correct Hudu's routing where the upstream client was
+wrong. Notably, **single-asset operations are nested under the company**
+(`/api/v1/companies/{company_id}/assets/{id}[/archive]`); only the asset *list* endpoint is
+top-level (and supports an `id` filter, which is how `get_asset` resolves a single asset without a
+company). No-body mutations (archive/unarchive/delete) are sent **without** a `Content-Type: application/json`
+header, since Hudu's backend 500s trying to parse an empty JSON body. Asset `custom_fields` are
+normalized to Hudu's required array-of-objects shape (a single `{ }` object is wrapped into `[ { } ]`).
+
+### Transient-DNS retry
+
+Hudu API calls are wrapped with a short retry that fires only on pre-connection failures
+(`EAI_AGAIN` / `ENOTFOUND` / `ECONNREFUSED`) — common as intermittent DNS blips inside containers.
+These are safe to retry even for writes because the request never reached Hudu. Other errors
+(4xx/5xx, timeouts mid-flight) are not retried.
 
 ## Development
 
