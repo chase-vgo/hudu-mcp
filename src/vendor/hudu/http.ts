@@ -65,16 +65,22 @@ export class HttpClient {
     await this.rateLimiter.waitForSlot();
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...this.authManager.getAuthHeaders(),
     };
+    // Only advertise a JSON body when one is actually sent. Hudu's backend (Rails)
+    // tries to parse the request body as JSON whenever Content-Type is
+    // application/json — and an empty body throws server-side (500). This bites
+    // the no-body mutations (archive/unarchive/delete).
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     this.rateLimiter.recordRequest();
 
     const response = await fetch(url, {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
     return this.handleResponse<T>(response, url, method, body, retryCount);
