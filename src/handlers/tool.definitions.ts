@@ -478,14 +478,21 @@ export const TOOL_DEFINITIONS: McpTool[] = [
   // Procedures
   {
     name: 'hudu_list_procedures',
-    description: 'List procedures in Hudu',
+    description: 'List Hudu processes and runs. A "process" is a template (run=false); a "run" is an active instance kicked off from a process (run=true). Pass type="run" to list process runs, type="process" for templates, or omit for both.',
     inputSchema: {
       type: 'object',
       properties: {
+        type: { type: 'string', enum: ['process', 'run', 'all'], description: 'Filter by type: "process" (templates only), "run" (active instances/runs only), or "all" (both, default)' },
+        process_scope: { type: 'string', enum: ['global', 'company'], description: 'Filter processes by scope: "global" (all companies) or "company" (company-specific). Only applies to processes.' },
+        parent_process_id: { type: 'number', description: 'Return only runs created from this parent process ID' },
         page: { type: 'number', description: 'Page number' },
-        page_size: { type: 'number', description: 'Results per page' },
+        page_size: { type: 'number', description: 'Results per page (max 1000)' },
         company_id: { type: 'number', description: 'Filter by company ID' },
-        name: { type: 'string', description: 'Filter by name' }
+        name: { type: 'string', description: 'Filter by name (case-insensitive exact match)' },
+        slug: { type: 'string', description: 'Filter by URL slug' },
+        created_at: { type: 'string', description: 'Filter by creation date: exact ("2024-01-15") or range ("2024-01-01,2024-01-31")' },
+        updated_at: { type: 'string', description: 'Filter by update date: exact ("2024-01-15") or range ("2024-01-01,2024-01-31")' },
+        archived: { type: 'string', enum: ['true', 'false', '1', '0'], description: 'Show only archived ("true"/"1") or only non-archived ("false"/"0", default)' }
       },
       required: []
     }
